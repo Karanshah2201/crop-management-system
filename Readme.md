@@ -28,10 +28,7 @@ This project aims to solve these issues by acting as a **"Digital Agricultural C
 🔴 Calculates **exact nutrient requirements** based on:
 - Farm Size (**Acres, Hectares, Guntha**)
 - Crop-specific inputs
-
 📌 Automatically generates a **Foliar Spray Schedule** for **maximum yield & healthy growth**.
-
-
 *   **Nutrient Gap Analysis**: Determines exact Urea, DAP, and MOP needs.
 *   **Foliar Spraying**: Recommends specific liquid fertilizers (e.g., NPK 19:19:19) for Vegetative, Flowering, and Fruiting stages.
 *   **Cost-Effective**: Prevents over-use by accounting for existing soil nutrients.
