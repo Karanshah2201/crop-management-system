@@ -7,11 +7,53 @@ import os
 from Utils.fertilizer_calc import calculate_fertilizer
 from Utils.weather_api import get_weather
 
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
 
 # --- CONFIGURATION ---
-WEATHER_API_KEY = "929eff2ab5508fe7f20a5f057d4876a8" # <--- PASTE YOUR KEY HERE
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+# --- CONFIGURATION ---
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
+if not WEATHER_API_KEY:
+    print("WARNING: WEATHER_API_KEY not found in environment variables.")
+
+# Database Configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///farm_history.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# --- DATABASE MODEL ---
+class PredictionHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    city = db.Column(db.String(100))
+    nitrogen = db.Column(db.Integer)
+    phosphorus = db.Column(db.Integer)
+    potassium = db.Column(db.Integer)
+    soil_type = db.Column(db.String(50))
+    predicted_crop = db.Column(db.String(50))
+    confidence = db.Column(db.Float)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'date': self.date.strftime('%Y-%m-%d %H:%M'),
+            'city': self.city,
+            'predicted_crop': self.predicted_crop,
+            'confidence': self.confidence
+        }
+
+# Initialize Database
+with app.app_context():
+    db.create_all()
 
 # Load Model
 model_data = joblib.load('models/crop_recommendation_model.pkl')
@@ -51,6 +93,13 @@ def normalize_crop_name(predicted_name):
 def predict():
     try:
         data = request.json
+        if not data:
+             return jsonify({"error": "No input data provided"}), 400
+        
+        required_fields = ['N', 'P', 'K', 'soil_type']
+        missing = [field for field in required_fields if field not in data]
+        if missing:
+             return jsonify({"error": f"Missing required fields: {missing}"}), 400
         
         # 1. Weather Logic
         city = data.get('city')
@@ -90,6 +139,24 @@ def predict():
             })
             
         best_crop = alternatives[0]['crop']
+        best_confidence = alternatives[0]['confidence']
+
+        # 4. Save to Database
+        try:
+            new_entry = PredictionHistory(
+                city=city if city else "Unknown",
+                nitrogen=data.get('N'),
+                phosphorus=data.get('P'),
+                potassium=data.get('K'),
+                soil_type=data.get('soil_type'),
+                predicted_crop=best_crop,
+                confidence=best_confidence
+            )
+            db.session.add(new_entry)
+            db.session.commit()
+        except Exception as db_err:
+            print(f"Database Error: {db_err}")
+            # Continue even if saving fails
 
         return jsonify({
             "recommended_crop": best_crop,
@@ -148,6 +215,16 @@ def fertilizer():
 
     except Exception as e:
         print(f"Fertilizer Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# --- ROUTE 3: HISTORY ---
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    try:
+        # Get last 10 records, newest first
+        history = PredictionHistory.query.order_by(PredictionHistory.date.desc()).limit(10).all()
+        return jsonify([item.to_dict() for item in history])
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
