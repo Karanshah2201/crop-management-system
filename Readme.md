@@ -88,7 +88,3 @@ This project aims to solve these issues by acting as a **"Digital Agricultural C
 84: ## ⚙️ How to Run
 85: 1.  **Backend**: `cd Backend` -> `python app.py`
 86: 2.  **Frontend**: `cd frontend` -> `npm start`
-87: 
-88: > [!IMPORTANT]
-89: > **Troubleshooting**: If you see a `404 Not Found` error or changes aren't appearing, **restart the backend server**.
-90: > Stop the terminal (`Ctrl+C`) and run `python app.py` again to load the latest code.
