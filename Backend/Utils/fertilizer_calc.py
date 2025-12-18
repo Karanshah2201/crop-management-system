@@ -1,4 +1,4 @@
-def calculate_fertilizer(ideal_n, ideal_p, ideal_k, current_n, current_p, current_k, farm_size, unit):
+def calculate_fertilizer(ideal_n, ideal_p, ideal_k, current_n, current_p, current_k, farm_size, unit, sprays=None):
     """
     Calculates exact kg of Urea, DAP, and MOP needed.
     """
@@ -43,27 +43,8 @@ def calculate_fertilizer(ideal_n, ideal_p, ideal_k, current_n, current_p, curren
     # MOP is 60% Potassium
     mop_kg = (k_deficit / 0.60) * size_in_hectares
 
-    # 4. Foliar Spray Schedule (Standard General Recommendation)
-    spray_schedule = [
-        {
-            "stage": "Vegetative Growth (Day 20-25)",
-            "name": "NPK 19:19:19 (Starter)",
-            "dosage": "5-6 gm per liter",
-            "purpose": "Boosts initial root and leaf development."
-        },
-        {
-            "stage": "Flowering Stage (Day 40-50)",
-            "name": "NPK 0:52:34 (Mono Potassium Phosphate)",
-            "dosage": "5-6 gm per liter",
-            "purpose": "Promotes flowering and prevents flower drop."
-        },
-        {
-            "stage": "Fruiting / Pod Formation (Day 60-70)",
-            "name": "NPK 13:0:45 (Potassium Nitrate)",
-            "dosage": "8-10 gm per liter",
-            "purpose": "Improves fruit weight, quality, and shine."
-        }
-    ]
+    # 4. Use provided Spray Schedule
+    spray_schedule = sprays if sprays is not None else []
 
     return {
         "urea": round(urea_kg, 2),

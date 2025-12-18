@@ -5,22 +5,31 @@ import os
 
 # Define paths relative to this script
 current_dir = os.path.dirname(os.path.abspath(__file__))
-raw_file_path = os.path.join(current_dir, '..', 'Data', 'Raw', 'complete_crop_cultivation_guide (1).csv')
+raw_file_path = os.path.join(current_dir, '..', 'Data', 'Raw', 'complete_crop_cultivation_guide.csv')
 output_file_path = os.path.join(current_dir, '..', 'Data', 'Processed', 'crop_rules.json')
 
 def extract_npk(text):
     if not isinstance(text, str):
         return {"N": 0, "P": 0, "K": 0}
     
-    n_match = re.search(r'N\s*:\s*(\d+)', text, re.IGNORECASE)
-    p_match = re.search(r'P2[O0]5\s*:\s*(\d+)', text, re.IGNORECASE)
-    k_match = re.search(r'K2[O0]\s*:\s*(\d+)', text, re.IGNORECASE)
-
-    return {
-        "N": int(n_match.group(1)) if n_match else 0,
-        "P": int(p_match.group(1)) if p_match else 0,
-        "K": int(k_match.group(1)) if k_match else 0
+    res = {"N": 0, "P": 0, "K": 0}
+    
+    # Robust patterns for N, P, K
+    # Matches "N:120", "120g N", "N: 120-150", etc.
+    patterns = {
+        "N": [r'N\s*[:\-]\s*(\d+)', r'(\d+)(?:\s*-\s*\d+|)(?:\s*g|kg|)\s*N'],
+        "P": [r'P(?:2[O0]5|)\s*[:\-]\s*(\d+)', r'(\d+)(?:\s*-\s*\d+|)(?:\s*g|kg|)\s*P'],
+        "K": [r'K(?:2[O0]|)\s*[:\-]\s*(\d+)', r'(\d+)(?:\s*-\s*\d+|)(?:\s*g|kg|)\s*K']
     }
+
+    for key, regex_list in patterns.items():
+        for pattern in regex_list:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                res[key] = int(match.group(1))
+                break # Found for this nutrient, move to next
+                
+    return res
 
 def clean_data():
     try:

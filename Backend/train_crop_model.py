@@ -4,11 +4,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
+import os
 
 # 1. Load the Dataset
 # We use the path relative to where you run the script, or an absolute path
-# Make sure 'data_core.csv' is in backend/data/raw/
-file_path = '../data/raw/data_core.csv' 
+# Make sure 'data_core.csv' is in Backend/Data/Raw/
+file_path = 'Data/Raw/data_core.csv' 
 df = pd.read_csv(file_path)
 
 print("Dataset loaded successfully.")
@@ -45,5 +46,7 @@ model_data = {
     'model': model,
     'columns': X.columns.tolist() 
 }
-joblib.dump(model_data, 'crop_recommendation_model.pkl')
-print("Model saved as 'crop_recommendation_model.pkl'")
+# Save to Models folder
+os.makedirs('Models', exist_ok=True)
+joblib.dump(model_data, 'Models/crop_recommendation_model.pkl')
+print("Model saved as 'Models/crop_recommendation_model.pkl'")

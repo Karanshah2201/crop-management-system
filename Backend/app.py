@@ -1,23 +1,21 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+import os
+import json
+from datetime import datetime
 import pandas as pd
 import joblib
-import json
-import os
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from dotenv import load_dotenv
+
 from Utils.fertilizer_calc import calculate_fertilizer
 from Utils.weather_api import get_weather
-
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
-
-# --- CONFIGURATION ---
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
 
 # --- CONFIGURATION ---
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
@@ -38,6 +36,7 @@ class PredictionHistory(db.Model):
     nitrogen = db.Column(db.Integer)
     phosphorus = db.Column(db.Integer)
     potassium = db.Column(db.Integer)
+    moisture = db.Column(db.Float)
     soil_type = db.Column(db.String(50))
     predicted_crop = db.Column(db.String(50))
     confidence = db.Column(db.Float)
@@ -148,6 +147,7 @@ def predict():
                 nitrogen=data.get('N'),
                 phosphorus=data.get('P'),
                 potassium=data.get('K'),
+                moisture=data.get('moisture'),
                 soil_type=data.get('soil_type'),
                 predicted_crop=best_crop,
                 confidence=best_confidence
@@ -200,6 +200,7 @@ def fertilizer():
                 return jsonify({"error": f"Crop '{clean_name}' not found in database. Rules available for: {list(crop_rules.keys())[:5]}..."}), 404
             
         # 3. Calculate
+        # 3. Calculate
         result = calculate_fertilizer(
             ideal_n=rules['ideal_nitrogen'],
             ideal_p=rules['ideal_phosphorus'],
@@ -208,13 +209,54 @@ def fertilizer():
             current_p=data.get('P'),
             current_k=data.get('K'),
             farm_size=farm_size,
-            unit=unit
+            unit=unit,
+            sprays=rules.get('sprays', [])
         )
         
         return jsonify(result)
 
     except Exception as e:
         print(f"Fertilizer Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# --- ROUTE 4: DISEASE DETECTION (MOCK) ---
+@app.route('/api/detect-disease', methods=['POST'])
+def detect_disease():
+    try:
+        if 'image' not in request.files:
+            return jsonify({"error": "No image uploaded"}), 400
+            
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+            
+        # Ensure uploads dir exists
+        upload_folder = os.path.join(os.getcwd(), 'uploads')
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+            
+        # Save file (optional, for real model usage later)
+        filepath = os.path.join(upload_folder, file.filename)
+        file.save(filepath)
+        
+        # REAL ML PREDICTION
+        from Utils.disease_predictor import get_predictor
+        
+        predictor = get_predictor()
+        predictions = predictor.predict(filepath, top_k=1)
+        
+        # Get primary prediction
+        primary = predictions[0]
+        
+        return jsonify({
+            "diagnosis": primary['disease'],
+            "confidence": primary['confidence'],
+            "treatment": primary['treatment'],
+            "all_predictions": predictions
+        })
+
+    except Exception as e:
+        print(f"Disease Detection Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 # --- ROUTE 3: HISTORY ---

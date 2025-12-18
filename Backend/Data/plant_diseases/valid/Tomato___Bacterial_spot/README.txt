@@ -1,0 +1,1 @@
+Place Tomato___Bacterial_spot images here for valid set.
