@@ -1,1 +1,0 @@
-Place Tomato___Septoria_leaf_spot images here for valid set.

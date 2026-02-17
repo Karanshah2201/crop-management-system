@@ -1,1 +1,0 @@
-Place Tomato___Leaf_Mold images here for train set.

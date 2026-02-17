@@ -12,7 +12,7 @@ def get_weather(city_name, api_key):
     }
     
     try:
-        response = requests.get(base_url, params=params)
+        response = requests.get(base_url, params=params, timeout=3)
         if response.status_code == 200:
             data = response.json()
             return {

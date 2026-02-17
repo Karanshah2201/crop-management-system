@@ -1,1 +1,0 @@
-Place Tomato___Bacterial_spot images here for train set.

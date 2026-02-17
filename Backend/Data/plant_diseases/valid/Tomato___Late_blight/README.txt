@@ -1,1 +1,0 @@
-Place Tomato___Late_blight images here for valid set.
